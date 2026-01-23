@@ -59,15 +59,9 @@ export function BookCard({ book }: BookCardProps) {
           >
             {book.title}
           </h3>
-          <p
-            className="text-sm mt-0.5"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            {book.author}
-          </p>
           {book.category && (
             <span
-              className="inline-block text-xs px-1.5 py-0.5 rounded mt-2"
+              className="inline-block text-xs px-1.5 py-0.5 rounded mt-1"
               style={{
                 background: "var(--bg-tertiary)",
                 color: "var(--text-muted)",

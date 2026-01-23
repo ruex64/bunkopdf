@@ -18,7 +18,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMounted(true);
     // Check localStorage first
-    const savedTheme = localStorage.getItem("kirokumd-theme") as Theme | null;
+    const savedTheme = localStorage.getItem("bunkopdf-theme") as Theme | null;
     if (savedTheme) {
       setTheme(savedTheme);
     } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
@@ -29,7 +29,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (mounted) {
       document.documentElement.classList.toggle("dark", theme === "dark");
-      localStorage.setItem("kirokumd-theme", theme);
+      localStorage.setItem("bunkopdf-theme", theme);
     }
   }, [theme, mounted]);
 

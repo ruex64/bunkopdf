@@ -1,6 +1,6 @@
-# KirokuMD Design System
+# BunkoPDF Design System
 
-A comprehensive guide to the visual design language and UI patterns used in KirokuMD.
+A comprehensive guide to the visual design language and UI patterns used in BunkoPDF.
 
 ---
 
@@ -20,7 +20,7 @@ A comprehensive guide to the visual design language and UI patterns used in Kiro
 
 ## Design Philosophy
 
-KirokuMD follows a **quiet documentation aesthetic** inspired by Japanese minimalism. The interface is designed to feel like writing in a physical notebook—calm, focused, and free from distraction.
+BunkoPDF follows a **quiet documentation aesthetic** inspired by Japanese minimalism. The interface is designed to feel like writing in a physical notebook—calm, focused, and free from distraction.
 
 ### Core Principles
 
@@ -335,7 +335,7 @@ Based on a 4px grid system:
 
 ### Icon Library
 
-KirokuMD uses **Lucide React** for all icons.
+BunkoPDF uses **Lucide React** for all icons.
 
 ```jsx
 import { Save, Download, Share2, Moon, Sun } from "lucide-react";
@@ -398,8 +398,8 @@ useEffect(() => {
 Theme preference is saved to `localStorage`:
 
 ```javascript
-localStorage.getItem("kirokumd-theme")
-localStorage.setItem("kirokumd-theme", theme)
+localStorage.getItem("bunkopdf-theme")
+localStorage.setItem("bunkopdf-theme", theme)
 ```
 
 ### System Preference Detection

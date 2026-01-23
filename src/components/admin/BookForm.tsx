@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Save } from "lucide-react";
-import type { Book } from "@/lib/firebase";
+import { BOOK_CATEGORIES, type Book, type BookCategory } from "@/lib/firebase";
 
 interface BookFormProps {
   book?: Book | null;
@@ -13,11 +13,10 @@ interface BookFormProps {
 export function BookForm({ book, onSave, onCancel }: BookFormProps) {
   const [formData, setFormData] = useState({
     title: book?.title || "",
-    author: book?.author || "",
     description: book?.description || "",
     pdfUrl: book?.pdfUrl || "",
     coverUrl: book?.coverUrl || "",
-    category: book?.category || "",
+    category: (book?.category || "Scripts") as BookCategory,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,8 +26,8 @@ export function BookForm({ book, onSave, onCancel }: BookFormProps) {
     setError("");
 
     // Validate required fields
-    if (!formData.title.trim() || !formData.author.trim() || !formData.pdfUrl.trim()) {
-      setError("Title, Author, and PDF URL are required");
+    if (!formData.title.trim() || !formData.pdfUrl.trim()) {
+      setError("Title and PDF URL are required");
       return;
     }
 
@@ -54,14 +53,14 @@ export function BookForm({ book, onSave, onCancel }: BookFormProps) {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50"
@@ -70,7 +69,7 @@ export function BookForm({ book, onSave, onCancel }: BookFormProps) {
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-lg rounded-lg shadow-lg max-h-[90vh] overflow-hidden flex flex-col"
+        className="relative w-full sm:max-w-lg rounded-t-lg sm:rounded-lg shadow-lg max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col"
         style={{ background: "var(--bg-secondary)" }}
       >
         {/* Header */}
@@ -122,30 +121,34 @@ export function BookForm({ book, onSave, onCancel }: BookFormProps) {
               />
             </div>
 
-            {/* Author */}
+            {/* Category */}
             <div>
               <label
-                htmlFor="author"
+                htmlFor="category"
                 className="block text-sm mb-1"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Author <span style={{ color: "var(--accent)" }}>*</span>
+                Category <span style={{ color: "var(--accent)" }}>*</span>
               </label>
-              <input
-                id="author"
-                name="author"
-                type="text"
-                value={formData.author}
+              <select
+                id="category"
+                name="category"
+                value={formData.category}
                 onChange={handleChange}
                 required
-                placeholder="Enter author name"
                 className="w-full px-3 py-2 rounded border text-sm outline-none transition-colors focus:border-[var(--accent)]"
                 style={{
                   background: "var(--bg-primary)",
                   borderColor: "var(--border-primary)",
                   color: "var(--text-primary)",
                 }}
-              />
+              >
+                {BOOK_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* PDF URL */}
@@ -196,31 +199,6 @@ export function BookForm({ book, onSave, onCancel }: BookFormProps) {
                 value={formData.coverUrl}
                 onChange={handleChange}
                 placeholder="https://..."
-                className="w-full px-3 py-2 rounded border text-sm outline-none transition-colors focus:border-[var(--accent)]"
-                style={{
-                  background: "var(--bg-primary)",
-                  borderColor: "var(--border-primary)",
-                  color: "var(--text-primary)",
-                }}
-              />
-            </div>
-
-            {/* Category */}
-            <div>
-              <label
-                htmlFor="category"
-                className="block text-sm mb-1"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Category
-              </label>
-              <input
-                id="category"
-                name="category"
-                type="text"
-                value={formData.category}
-                onChange={handleChange}
-                placeholder="e.g., Programming, Fiction, Science"
                 className="w-full px-3 py-2 rounded border text-sm outline-none transition-colors focus:border-[var(--accent)]"
                 style={{
                   background: "var(--bg-primary)",

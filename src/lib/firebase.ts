@@ -25,15 +25,18 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const db = getFirestore(app);
 
+// Category options
+export const BOOK_CATEGORIES = ["Scripts", "Short Stories", "Novels", "Poems"] as const;
+export type BookCategory = typeof BOOK_CATEGORIES[number];
+
 // Book type definition
 export interface Book {
   id: string;
   title: string;
-  author: string;
   description: string;
   pdfUrl: string;
   coverUrl?: string;
-  category: string;
+  category: BookCategory;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,7 +54,6 @@ export async function getBooks(): Promise<Book[]> {
     return {
       id: doc.id,
       title: data.title,
-      author: data.author,
       description: data.description,
       pdfUrl: data.pdfUrl,
       coverUrl: data.coverUrl || "",

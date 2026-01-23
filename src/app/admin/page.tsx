@@ -140,7 +140,7 @@ export default function AdminPage() {
               className="text-base font-medium"
               style={{ color: "var(--text-primary)" }}
             >
-              KirokuMD Books
+              BunkoPDF
             </span>
           </Link>
           <ThemeToggle />

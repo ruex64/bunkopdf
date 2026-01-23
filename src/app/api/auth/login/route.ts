@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 // Simple session management - will be replaced with 2FA later
-const SESSION_COOKIE_NAME = "kirokumd-admin-session";
+const SESSION_COOKIE_NAME = "bunkopdf-admin-session";
 const SESSION_MAX_AGE = 60 * 60 * 24; // 24 hours
 
 export async function POST(request: Request) {

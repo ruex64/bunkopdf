@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-const SESSION_COOKIE_NAME = "kirokumd-admin-session";
+const SESSION_COOKIE_NAME = "bunkopdf-admin-session";
 
 export async function GET() {
   const cookieStore = await cookies();

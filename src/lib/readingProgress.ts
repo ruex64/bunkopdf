@@ -1,6 +1,6 @@
 // Reading progress utility - stores last read page in localStorage
 
-const STORAGE_KEY = "kirokumd-reading-progress";
+const STORAGE_KEY = "bunkopdf-reading-progress";
 
 interface ReadingProgress {
   [bookId: string]: {

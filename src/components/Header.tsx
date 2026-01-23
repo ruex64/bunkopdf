@@ -1,14 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Settings } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-interface HeaderProps {
-  showAdminLink?: boolean;
-}
-
-export function Header({ showAdminLink = true }: HeaderProps) {
+export function Header() {
   return (
     <header
       className="h-12 shrink-0 flex items-center justify-between px-4 border-b"
@@ -23,23 +19,11 @@ export function Header({ showAdminLink = true }: HeaderProps) {
           className="text-base font-medium"
           style={{ color: "var(--text-primary)" }}
         >
-          KirokuMD Books
+          BunkoPDF
         </span>
       </Link>
 
-      <div className="flex items-center gap-2">
-        <ThemeToggle />
-        {showAdminLink && (
-          <Link
-            href="/admin"
-            className="p-2 transition-opacity hover:opacity-70"
-            style={{ color: "var(--text-muted)" }}
-            title="Admin Panel"
-          >
-            <Settings className="w-5 h-5" />
-          </Link>
-        )}
-      </div>
+      <ThemeToggle />
     </header>
   );
 }

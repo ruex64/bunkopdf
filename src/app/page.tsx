@@ -1,37 +1,43 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Plus } from "lucide-react";
 import { Header } from "@/components/Header";
 import { BookCard } from "@/components/BookCard";
 import { SearchBar } from "@/components/SearchBar";
-import { getBooks, type Book } from "@/lib/firebase";
+import { BookForm } from "@/components/admin/BookForm";
+import { getBooks, addBook, BOOK_CATEGORIES, type Book } from "@/lib/firebase";
 
 export default function HomePage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  const fetchBooks = async () => {
+    try {
+      const fetchedBooks = await getBooks();
+      setBooks(fetchedBooks);
+    } catch (error) {
+      console.error("Error fetching books:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchBooks() {
-      try {
-        const fetchedBooks = await getBooks();
-        setBooks(fetchedBooks);
-      } catch (error) {
-        console.error("Error fetching books:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchBooks();
   }, []);
 
-  // Get unique categories
-  const categories = useMemo(() => {
-    const cats = new Set(books.map((book) => book.category).filter(Boolean));
-    return ["all", ...Array.from(cats)];
-  }, [books]);
+  const handleAddBook = async (bookData: Omit<Book, "id" | "createdAt" | "updatedAt">) => {
+    await addBook(bookData);
+    setShowAddForm(false);
+    fetchBooks();
+  };
+
+  // Fixed categories
+  const categories = ["all", ...BOOK_CATEGORIES];
 
   // Filter books
   const filteredBooks = useMemo(() => {
@@ -39,7 +45,6 @@ export default function HomePage() {
       const matchesSearch =
         searchQuery === "" ||
         book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
         book.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesCategory =
@@ -68,18 +73,31 @@ export default function HomePage() {
       <Header />
 
       <main className="flex-1 overflow-auto">
-        <div className="max-w-4xl mx-auto p-6">
-          {/* Page Title */}
-          <div className="mb-6">
-            <h1
-              className="text-2xl font-semibold"
-              style={{ color: "var(--text-primary)" }}
+        <div className="max-w-4xl mx-auto p-4 sm:p-6">
+          {/* Page Title & Add Button */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <div>
+              <h1
+                className="text-xl sm:text-2xl font-semibold"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Book Library
+              </h1>
+              <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+                Browse and read PDF books
+              </p>
+            </div>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2 text-sm rounded transition-opacity hover:opacity-80 w-full sm:w-auto"
+              style={{
+                background: "var(--accent)",
+                color: "var(--bg-primary)",
+              }}
             >
-              Book Library
-            </h1>
-            <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-              Browse and read PDF books shared in the collection
-            </p>
+              <Plus className="w-4 h-4" />
+              <span>Add Book</span>
+            </button>
           </div>
 
           {/* Search & Filter */}
@@ -90,7 +108,7 @@ export default function HomePage() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 rounded border text-sm outline-none transition-colors focus:border-[var(--accent)]"
+              className="px-3 py-2 rounded border text-sm outline-none transition-colors focus:border-[var(--accent)] w-full sm:w-auto"
               style={{
                 background: "var(--bg-primary)",
                 borderColor: "var(--border-primary)",
@@ -146,6 +164,14 @@ export default function HomePage() {
           )}
         </div>
       </main>
+
+      {/* Add Book Modal */}
+      {showAddForm && (
+        <BookForm
+          onSave={handleAddBook}
+          onCancel={() => setShowAddForm(false)}
+        />
+      )}
     </div>
   );
 }

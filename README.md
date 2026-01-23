@@ -1,6 +1,6 @@
-# KirokuMD Books
+# BunkoPDF
 
-A minimal PDF book sharing platform built with Next.js, following the KirokuMD design system.
+A minimal PDF book sharing platform built with Next.js, following the BunkoPDF design system.
 
 ## Features
 
@@ -20,7 +20,7 @@ A minimal PDF book sharing platform built with Next.js, following the KirokuMD d
 ### 1. Install Dependencies
 
 ```bash
-cd kirokumd-books
+cd bunkopdf
 npm install
 ```
 
@@ -79,7 +79,7 @@ Visit [http://localhost:3000/admin](http://localhost:3000/admin) to access the a
 ## Project Structure
 
 ```
-kirokumd-books/
+bunkopdf/
 ├── src/
 │   ├── app/
 │   │   ├── admin/
@@ -106,7 +106,7 @@ kirokumd-books/
 
 ## Design System
 
-This app follows the KirokuMD design system with:
+This app follows the BunkoPDF design system with:
 
 - **Minimal, calm aesthetic** - No bright colors or animations
 - **CSS Custom Properties** - Easy theming with CSS variables
