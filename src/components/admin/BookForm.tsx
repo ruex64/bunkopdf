@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { X, Save } from "lucide-react";
+import { useState, useRef } from "react";
+import { X, Save, Upload, Image as ImageIcon } from "lucide-react";
 import { BOOK_CATEGORIES, type Book, type BookCategory } from "@/lib/firebase";
 
 interface BookFormProps {
@@ -19,7 +19,60 @@ export function BookForm({ book, onSave, onCancel }: BookFormProps) {
     category: (book?.category || "Scripts") as BookCategory,
   });
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image size must be less than 5MB");
+      return;
+    }
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "");
+      formData.append("folder", "bunkopdf/covers");
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await response.json();
+      setFormData((prev) => ({ ...prev, coverUrl: data.secure_url }));
+    } catch (err) {
+      setError("Failed to upload image. Please try again.");
+      console.error("Upload error:", err);
+    } finally {
+      setUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,8 +243,70 @@ export function BookForm({ book, onSave, onCancel }: BookFormProps) {
                 className="block text-sm mb-1"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Cover Image URL (optional)
+                Cover Image (optional)
               </label>
+              
+              {/* Upload Button */}
+              <div className="flex gap-2 mb-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="coverImageUpload"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-2 px-3 py-2 text-sm rounded border transition-colors hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: "var(--bg-tertiary)",
+                    borderColor: "var(--border-primary)",
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {uploading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      <span>Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      <span>Upload to Cloudinary</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Cover Preview */}
+              {formData.coverUrl && (
+                <div className="mb-2 relative inline-block">
+                  <img
+                    src={formData.coverUrl}
+                    alt="Cover preview"
+                    className="h-24 w-auto rounded border object-cover"
+                    style={{ borderColor: "var(--border-primary)" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, coverUrl: "" }))}
+                    className="absolute -top-2 -right-2 p-1 rounded-full"
+                    style={{ background: "var(--bg-tertiary)", color: "var(--text-muted)" }}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              {/* Manual URL Input */}
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex-1 h-px" style={{ background: "var(--border-primary)" }} />
+                <span className="text-xs" style={{ color: "var(--text-ghost)" }}>or paste URL</span>
+                <div className="flex-1 h-px" style={{ background: "var(--border-primary)" }} />
+              </div>
               <input
                 id="coverUrl"
                 name="coverUrl"
