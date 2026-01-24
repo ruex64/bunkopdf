@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
