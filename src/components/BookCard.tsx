@@ -8,9 +8,10 @@ import { useEffect, useState } from "react";
 
 interface BookCardProps {
   book: Book;
+  isAdmin?: boolean;
 }
 
-export function BookCard({ book }: BookCardProps) {
+export function BookCard({ book, isAdmin = false }: BookCardProps) {
   const [savedPage, setSavedPage] = useState<number | null>(null);
 
   useEffect(() => {

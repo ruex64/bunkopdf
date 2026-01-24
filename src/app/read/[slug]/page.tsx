@@ -2,9 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import {
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   ZoomIn,
@@ -469,20 +467,8 @@ function ReaderContent() {
           borderColor: "var(--border-primary)",
         }}
       >
-        {/* Left: Back & Title */}
+        {/* Left: Title */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <Link
-            href="/"
-            className="flex items-center gap-1 text-sm transition-opacity hover:opacity-70 shrink-0"
-            style={{ color: "var(--text-muted)" }}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Library</span>
-          </Link>
-          <div
-            className="w-px h-5 hidden sm:block"
-            style={{ background: "var(--border-primary)" }}
-          />
           <h1
             className="text-sm font-medium truncate"
             style={{ color: "var(--text-primary)" }}

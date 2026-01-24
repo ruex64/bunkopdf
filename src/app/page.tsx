@@ -268,10 +268,10 @@ export default function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredBooks.map((book) => (
                 <div key={book.id} className="relative group">
-                  <BookCard book={book} />
+                  <BookCard book={book} isAdmin={isAdmin ?? false} />
                   {/* Admin Controls Overlay */}
                   {isAdmin && (
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => {
                           e.preventDefault();
