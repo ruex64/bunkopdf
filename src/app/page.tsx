@@ -79,7 +79,7 @@ export default function HomePage() {
 
   // Book handlers
   const handleSaveBook = async (
-    bookData: Omit<Book, "id" | "createdAt" | "updatedAt">
+    bookData: Omit<Book, "id" | "slug" | "createdAt" | "updatedAt">
   ) => {
     console.log("[Page] Saving book...", bookData.title);
     

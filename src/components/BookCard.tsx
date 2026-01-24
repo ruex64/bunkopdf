@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, FileText } from "lucide-react";
+import { BookOpen, FileText, Share2 } from "lucide-react";
 import type { Book } from "@/lib/firebase";
 import { getReadingProgress } from "@/lib/readingProgress";
 import { useEffect, useState } from "react";
@@ -20,8 +20,30 @@ export function BookCard({ book }: BookCardProps) {
     }
   }, [book.id]);
 
-  // Build reader URL with encoded parameters
-  const readerUrl = `/read/${book.id}?url=${encodeURIComponent(book.pdfUrl)}&title=${encodeURIComponent(book.title)}`;
+  // Use slug-based URLs
+  const readerUrl = `/read/${book.slug}`;
+  const shareUrl = `/book/${book.slug}`;
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const fullShareUrl = `${window.location.origin}${shareUrl}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: book.title,
+          text: book.description || "Check out this book!",
+          url: fullShareUrl,
+        });
+      } catch {
+        navigator.clipboard.writeText(fullShareUrl);
+      }
+    } else {
+      navigator.clipboard.writeText(fullShareUrl);
+    }
+  };
 
   return (
     <div
@@ -53,12 +75,22 @@ export function BookCard({ book }: BookCardProps) {
 
         {/* Book Info */}
         <div className="flex-1 min-w-0">
-          <h3
-            className="text-base font-medium truncate"
-            style={{ color: "var(--text-primary)" }}
-          >
-            {book.title}
-          </h3>
+          <div className="flex items-start justify-between gap-2">
+            <h3
+              className="text-base font-medium truncate"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {book.title}
+            </h3>
+            <button
+              onClick={handleShare}
+              className="p-1 rounded transition-opacity hover:opacity-70 shrink-0"
+              style={{ color: "var(--text-muted)" }}
+              title="Share"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+          </div>
           {book.category && (
             <span
               className="inline-block text-xs px-1.5 py-0.5 rounded mt-1"

@@ -3,12 +3,14 @@ import {
   getFirestore,
   collection,
   getDocs,
+  getDoc,
   addDoc,
   updateDoc,
   deleteDoc,
   doc,
   query,
   orderBy,
+  where,
   Timestamp,
   FirestoreError,
 } from "firebase/firestore";
@@ -82,10 +84,22 @@ function logFirebaseError(operation: string, error: unknown): void {
 export const BOOK_CATEGORIES = ["Scripts", "Short Stories", "Novels", "Poems"] as const;
 export type BookCategory = typeof BOOK_CATEGORIES[number];
 
+// Generate URL-friendly slug from title
+export function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+}
+
 // Book type definition
 export interface Book {
   id: string;
   title: string;
+  slug: string;
   description: string;
   pdfUrl: string;
   coverUrl?: string;
@@ -112,6 +126,7 @@ export async function getBooks(): Promise<Book[]> {
       return {
         id: doc.id,
         title: data.title,
+        slug: data.slug || generateSlug(data.title),
         description: data.description,
         pdfUrl: data.pdfUrl,
         coverUrl: data.coverUrl || "",
@@ -126,21 +141,97 @@ export async function getBooks(): Promise<Book[]> {
   }
 }
 
+// Get a book by slug
+export async function getBookBySlug(slug: string): Promise<Book | null> {
+  console.log(`[Firebase] Fetching book by slug: ${slug}`);
+  
+  try {
+    const q = query(booksCollection, where("slug", "==", slug));
+    const snapshot = await getDocs(q);
+    
+    if (snapshot.empty) {
+      console.log(`[Firebase] No book found with slug: ${slug}`);
+      return null;
+    }
+    
+    const doc = snapshot.docs[0];
+    const data = doc.data();
+    
+    console.log(`[Firebase] Found book: ${data.title}`);
+    
+    return {
+      id: doc.id,
+      title: data.title,
+      slug: data.slug,
+      description: data.description,
+      pdfUrl: data.pdfUrl,
+      coverUrl: data.coverUrl || "",
+      category: data.category,
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    };
+  } catch (error) {
+    logFirebaseError("getBookBySlug", error);
+    throw error;
+  }
+}
+
+// Get a book by ID
+export async function getBookById(id: string): Promise<Book | null> {
+  console.log(`[Firebase] Fetching book by ID: ${id}`);
+  
+  try {
+    const docRef = doc(db, "books", id);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      console.log(`[Firebase] No book found with ID: ${id}`);
+      return null;
+    }
+    
+    const data = docSnap.data();
+    
+    console.log(`[Firebase] Found book: ${data.title}`);
+    
+    return {
+      id: docSnap.id,
+      title: data.title,
+      slug: data.slug || generateSlug(data.title),
+      description: data.description,
+      pdfUrl: data.pdfUrl,
+      coverUrl: data.coverUrl || "",
+      category: data.category,
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    };
+  } catch (error) {
+    logFirebaseError("getBookById", error);
+    throw error;
+  }
+}
+
 // Add a new book
 export async function addBook(
-  book: Omit<Book, "id" | "createdAt" | "updatedAt">
+  book: Omit<Book, "id" | "slug" | "createdAt" | "updatedAt">
 ): Promise<string> {
   console.log("[Firebase] Adding new book:", book.title);
   console.log("[Firebase] Book data:", JSON.stringify(book, null, 2));
   
   try {
+    const slug = generateSlug(book.title);
+    
+    // Check if slug already exists
+    const existingBook = await getBookBySlug(slug);
+    const finalSlug = existingBook ? `${slug}-${Date.now()}` : slug;
+    
     const docRef = await addDoc(booksCollection, {
       ...book,
+      slug: finalSlug,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
     
-    console.log(`[Firebase] Book added successfully with ID: ${docRef.id}`);
+    console.log(`[Firebase] Book added successfully with ID: ${docRef.id}, slug: ${finalSlug}`);
     return docRef.id;
   } catch (error) {
     logFirebaseError("addBook", error);
@@ -151,17 +242,25 @@ export async function addBook(
 // Update a book
 export async function updateBook(
   id: string,
-  book: Partial<Omit<Book, "id" | "createdAt" | "updatedAt">>
+  book: Partial<Omit<Book, "id" | "slug" | "createdAt" | "updatedAt">>
 ): Promise<void> {
   console.log(`[Firebase] Updating book: ${id}`);
   console.log("[Firebase] Update data:", JSON.stringify(book, null, 2));
   
   try {
     const docRef = doc(db, "books", id);
-    await updateDoc(docRef, {
+    
+    // If title is being updated, also update the slug
+    const updateData: Record<string, unknown> = {
       ...book,
       updatedAt: Timestamp.now(),
-    });
+    };
+    
+    if (book.title) {
+      updateData.slug = generateSlug(book.title);
+    }
+    
+    await updateDoc(docRef, updateData);
     
     console.log(`[Firebase] Book ${id} updated successfully`);
   } catch (error) {

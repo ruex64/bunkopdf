@@ -6,7 +6,7 @@ import { BOOK_CATEGORIES, type Book, type BookCategory } from "@/lib/firebase";
 
 interface BookFormProps {
   book?: Book | null;
-  onSave: (book: Omit<Book, "id" | "createdAt" | "updatedAt">) => Promise<void>;
+  onSave: (book: Omit<Book, "id" | "slug" | "createdAt" | "updatedAt">) => Promise<void>;
   onCancel: () => void;
 }
 
