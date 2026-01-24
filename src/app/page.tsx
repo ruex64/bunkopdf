@@ -372,7 +372,8 @@ export default function HomePage() {
       {/* Delete Confirmation Modal */}
       {deletingBook && (
         <DeleteConfirmModal
-          bookTitle={deletingBook.title}
+          title="Delete Book"
+          message={`Are you sure you want to delete "${deletingBook.title}"? This action cannot be undone.`}
           onConfirm={handleDeleteBook}
           onCancel={() => setDeletingBook(null)}
           loading={deleteLoading}
