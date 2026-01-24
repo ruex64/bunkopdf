@@ -21,23 +21,72 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { getBookBySlug, type Book } from "@/lib/firebase";
 import { getReadingProgress, setReadingProgress } from "@/lib/readingProgress";
 
+// Declare global pdfjsLib type
+declare global {
+  interface Window {
+    pdfjsLib: {
+      GlobalWorkerOptions: { workerSrc: string };
+      getDocument: (params: { url: string }) => { promise: Promise<PDFDocumentProxy> };
+    };
+  }
+}
+
+// PDF.js types
+type PDFDocumentProxy = {
+  numPages: number;
+  getPage: (pageNumber: number) => Promise<PDFPageProxy>;
+};
+
+type PDFPageProxy = {
+  getViewport: (params: { scale: number }) => { width: number; height: number };
+  render: (params: { canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }) => RenderTask;
+};
+
+type RenderTask = {
+  promise: Promise<void>;
+  cancel: () => void;
+};
+
+// Load PDF.js from CDN
+function loadPdfJs(): Promise<typeof window.pdfjsLib> {
+  return new Promise((resolve, reject) => {
+    if (window.pdfjsLib) {
+      resolve(window.pdfjsLib);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    script.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      resolve(window.pdfjsLib);
+    };
+    script.onerror = () => reject(new Error("Failed to load PDF.js"));
+    document.head.appendChild(script);
+  });
+}
+
 function ReaderContent() {
   const params = useParams();
   const slug = params.slug as string;
 
   const [book, setBook] = useState<Book | null>(null);
+  const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState<number | null>(null);
-  const [zoom, setZoom] = useState(100);
+  const [totalPages, setTotalPages] = useState(1);
+  const [scale, setScale] = useState(1);
   const [loading, setLoading] = useState(true);
   const [bookLoading, setBookLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showBookmark, setShowBookmark] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [rendering, setRendering] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const renderTaskRef = useRef<RenderTask | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch book data
@@ -46,12 +95,6 @@ function ReaderContent() {
       try {
         const fetchedBook = await getBookBySlug(slug);
         setBook(fetchedBook);
-
-        // Load saved progress
-        if (fetchedBook) {
-          const savedPage = getReadingProgress(fetchedBook.id);
-          setCurrentPage(savedPage);
-        }
       } catch (err) {
         console.error("Error fetching book:", err);
         setError("Failed to load book");
@@ -65,6 +108,137 @@ function ReaderContent() {
     }
   }, [slug]);
 
+  // Load PDF when book is fetched
+  useEffect(() => {
+    async function loadPdf() {
+      if (!book?.pdfUrl) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        console.log("[Reader] Loading PDF:", book.pdfUrl);
+        
+        // Load PDF.js from CDN
+        const pdfjsLib = await loadPdfJs();
+        
+        const loadingTask = pdfjsLib.getDocument({
+          url: book.pdfUrl,
+        });
+
+        const pdf = await loadingTask.promise;
+        console.log("[Reader] PDF loaded, pages:", pdf.numPages);
+        
+        setPdfDoc(pdf as unknown as PDFDocumentProxy);
+        setTotalPages(pdf.numPages);
+
+        // Load saved progress AFTER PDF is loaded
+        const savedPage = getReadingProgress(book.id);
+        console.log("[Reader] Saved progress:", savedPage);
+        
+        // Ensure saved page is valid
+        const validPage = Math.min(Math.max(1, savedPage), pdf.numPages);
+        setCurrentPage(validPage);
+        
+        setLoading(false);
+      } catch (err) {
+        console.error("[Reader] Failed to load PDF:", err);
+        setError("Failed to load PDF. The file might be inaccessible.");
+        setLoading(false);
+      }
+    }
+
+    loadPdf();
+  }, [book]);
+
+  // Render current page
+  useEffect(() => {
+    async function renderPage() {
+      if (!pdfDoc || !canvasRef.current || loading) return;
+
+      // Cancel any ongoing render
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+      }
+
+      setRendering(true);
+
+      try {
+        console.log("[Reader] Rendering page:", currentPage);
+        const page = await pdfDoc.getPage(currentPage);
+        
+        const canvas = canvasRef.current;
+        const context = canvas.getContext("2d");
+        if (!context) return;
+
+        // Calculate scale based on container width
+        const container = containerRef.current;
+        const containerWidth = container?.clientWidth || window.innerWidth;
+        const containerHeight = container?.clientHeight || window.innerHeight - 120;
+
+        const viewport = page.getViewport({ scale: 1 });
+        
+        // Fit to width or height, whichever is more constraining
+        const scaleX = (containerWidth - 32) / viewport.width;
+        const scaleY = (containerHeight - 32) / viewport.height;
+        const baseScale = Math.min(scaleX, scaleY, 2); // Max 2x for quality
+        
+        const finalScale = baseScale * scale;
+        const scaledViewport = page.getViewport({ scale: finalScale });
+
+        // Set canvas dimensions
+        const pixelRatio = window.devicePixelRatio || 1;
+        canvas.width = scaledViewport.width * pixelRatio;
+        canvas.height = scaledViewport.height * pixelRatio;
+        canvas.style.width = `${scaledViewport.width}px`;
+        canvas.style.height = `${scaledViewport.height}px`;
+
+        context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+        const renderContext = {
+          canvasContext: context,
+          viewport: scaledViewport,
+          canvas: canvas,
+        };
+
+        renderTaskRef.current = page.render(renderContext);
+        await renderTaskRef.current.promise;
+        
+        setRendering(false);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "RenderingCancelledException") {
+          // Ignore cancelled renders
+          return;
+        }
+        console.error("[Reader] Render error:", err);
+        setRendering(false);
+      }
+    }
+
+    renderPage();
+  }, [pdfDoc, currentPage, scale, loading]);
+
+  // Re-render on window resize
+  useEffect(() => {
+    let resizeTimeout: NodeJS.Timeout;
+    
+    const handleResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        if (pdfDoc && canvasRef.current) {
+          // Force re-render
+          setScale((s) => s);
+        }
+      }, 150);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(resizeTimeout);
+    };
+  }, [pdfDoc]);
+
   // Save progress with debounce
   const saveProgress = useCallback(
     (page: number) => {
@@ -75,7 +249,7 @@ function ReaderContent() {
       saveTimeoutRef.current = setTimeout(() => {
         if (book) {
           setReadingProgress(book.id, page);
-          // Show bookmark indicator
+          console.log("[Reader] Progress saved:", page);
           setShowBookmark(true);
           setTimeout(() => setShowBookmark(false), 1500);
         }
@@ -87,32 +261,41 @@ function ReaderContent() {
   // Update page and save progress
   const handlePageChange = useCallback(
     (newPage: number) => {
-      if (newPage >= 1 && (!totalPages || newPage <= totalPages)) {
-        setCurrentPage(newPage);
-        saveProgress(newPage);
+      const validPage = Math.min(Math.max(1, newPage), totalPages);
+      if (validPage !== currentPage) {
+        setCurrentPage(validPage);
+        saveProgress(validPage);
       }
     },
-    [totalPages, saveProgress]
+    [totalPages, currentPage, saveProgress]
   );
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return;
+      
       if (e.key === "ArrowLeft" || e.key === "PageUp") {
         e.preventDefault();
         handlePageChange(currentPage - 1);
-      } else if (e.key === "ArrowRight" || e.key === "PageDown") {
+      } else if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
         e.preventDefault();
         handlePageChange(currentPage + 1);
       } else if (e.key === "Home") {
         e.preventDefault();
         handlePageChange(1);
-      } else if (e.key === "End" && totalPages) {
+      } else if (e.key === "End") {
         e.preventDefault();
         handlePageChange(totalPages);
       } else if (e.key === "Escape" && isFullscreen) {
         e.preventDefault();
         handleExitFullscreen();
+      } else if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        handleZoomIn();
+      } else if (e.key === "-") {
+        e.preventDefault();
+        handleZoomOut();
       }
     };
 
@@ -120,11 +303,55 @@ function ReaderContent() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentPage, totalPages, handlePageChange, isFullscreen]);
 
-  // Cleanup timeout on unmount
+  // Touch/swipe navigation for mobile
+  useEffect(() => {
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      const touchEndX = e.changedTouches[0].screenX;
+      const touchEndY = e.changedTouches[0].screenY;
+      
+      const diffX = touchStartX - touchEndX;
+      const diffY = touchStartY - touchEndY;
+      
+      // Only trigger if horizontal swipe is dominant
+      if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+        if (diffX > 0) {
+          handlePageChange(currentPage + 1);
+        } else {
+          handlePageChange(currentPage - 1);
+        }
+      }
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener("touchstart", handleTouchStart, { passive: true });
+      container.addEventListener("touchend", handleTouchEnd, { passive: true });
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener("touchstart", handleTouchStart);
+        container.removeEventListener("touchend", handleTouchEnd);
+      }
+    };
+  }, [currentPage, handlePageChange]);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
+      }
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
       }
     };
   }, []);
@@ -139,60 +366,16 @@ function ReaderContent() {
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
-  // Touch/swipe navigation for mobile
-  useEffect(() => {
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartX = e.changedTouches[0].screenX;
-    };
-
-    const handleTouchEnd = (e: TouchEvent) => {
-      touchEndX = e.changedTouches[0].screenX;
-      handleSwipe();
-    };
-
-    const handleSwipe = () => {
-      const swipeThreshold = 50;
-      const diff = touchStartX - touchEndX;
-
-      if (Math.abs(diff) > swipeThreshold) {
-        if (diff > 0) {
-          // Swipe left - next page
-          handlePageChange(currentPage + 1);
-        } else {
-          // Swipe right - previous page
-          handlePageChange(currentPage - 1);
-        }
-      }
-    };
-
-    const container = canvasContainerRef.current;
-    if (container) {
-      container.addEventListener("touchstart", handleTouchStart, { passive: true });
-      container.addEventListener("touchend", handleTouchEnd, { passive: true });
-    }
-
-    return () => {
-      if (container) {
-        container.removeEventListener("touchstart", handleTouchStart);
-        container.removeEventListener("touchend", handleTouchEnd);
-      }
-    };
-  }, [currentPage, handlePageChange]);
-
-  const handleZoomIn = () => setZoom((z) => Math.min(z + 25, 200));
-  const handleZoomOut = () => setZoom((z) => Math.max(z - 25, 50));
-  const handleResetZoom = () => setZoom(100);
+  const handleZoomIn = () => setScale((s) => Math.min(s + 0.25, 3));
+  const handleZoomOut = () => setScale((s) => Math.max(s - 0.25, 0.5));
+  const handleResetZoom = () => setScale(1);
 
   const handleFullscreen = async () => {
-    if (containerRef.current) {
-      try {
-        await containerRef.current.requestFullscreen();
-      } catch (err) {
-        console.error("Fullscreen error:", err);
-      }
+    const element = document.documentElement;
+    try {
+      await element.requestFullscreen();
+    } catch (err) {
+      console.error("Fullscreen error:", err);
     }
   };
 
@@ -273,14 +456,9 @@ function ReaderContent() {
     );
   }
 
-  // Build PDF URL with page parameter - using Google Docs viewer to prevent download
-  // This embeds the PDF without download options
-  const viewerUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(book.pdfUrl)}`;
-
   return (
     <div
-      ref={containerRef}
-      className="h-screen flex flex-col"
+      className="h-screen flex flex-col select-none"
       style={{ background: "var(--bg-primary)" }}
     >
       {/* Header */}
@@ -315,7 +493,6 @@ function ReaderContent() {
 
         {/* Right: Controls */}
         <div className="flex items-center gap-1">
-          {/* Bookmark indicator */}
           {showBookmark && (
             <div
               className="flex items-center gap-1 px-2 py-1 text-xs rounded animate-pulse"
@@ -340,7 +517,11 @@ function ReaderContent() {
       </header>
 
       {/* PDF Viewer */}
-      <div ref={canvasContainerRef} className="flex-1 relative overflow-hidden">
+      <div
+        ref={containerRef}
+        className="flex-1 relative overflow-auto flex items-start justify-center p-4"
+        style={{ background: "var(--bg-tertiary)" }}
+      >
         {loading && (
           <div
             className="absolute inset-0 flex items-center justify-center z-10"
@@ -361,7 +542,7 @@ function ReaderContent() {
             className="absolute inset-0 flex flex-col items-center justify-center z-10"
             style={{ background: "var(--bg-primary)" }}
           >
-            <p className="mb-4" style={{ color: "var(--text-muted)" }}>
+            <p className="mb-4 text-center px-4" style={{ color: "var(--text-muted)" }}>
               {error}
             </p>
             <button
@@ -375,22 +556,25 @@ function ReaderContent() {
           </div>
         )}
 
-        <iframe
-          src={viewerUrl}
-          className="w-full h-full border-0"
-          onLoad={() => setLoading(false)}
-          onError={() => {
-            setLoading(false);
-            setError("Failed to load PDF");
-          }}
-          title={book.title}
-          sandbox="allow-scripts allow-same-origin"
+        {/* Canvas for PDF rendering */}
+        <canvas
+          ref={canvasRef}
+          className="shadow-lg rounded"
           style={{
-            transform: `scale(${zoom / 100})`,
-            transformOrigin: "top center",
-            width: zoom !== 100 ? `${10000 / zoom}%` : "100%",
-            height: zoom !== 100 ? `${10000 / zoom}%` : "100%",
+            background: "white",
+            opacity: rendering ? 0.7 : 1,
+            transition: "opacity 0.1s",
           }}
+        />
+
+        {/* Page turn tap zones for mobile */}
+        <div
+          className="absolute left-0 top-0 bottom-14 w-1/4 cursor-pointer sm:hidden"
+          onClick={() => handlePageChange(currentPage - 1)}
+        />
+        <div
+          className="absolute right-0 top-0 bottom-14 w-1/4 cursor-pointer sm:hidden"
+          onClick={() => handlePageChange(currentPage + 1)}
         />
       </div>
 
@@ -409,7 +593,7 @@ function ReaderContent() {
             disabled={currentPage <= 1}
             className="p-2 rounded transition-opacity hover:opacity-70 disabled:opacity-30 disabled:cursor-not-allowed"
             style={{ color: "var(--text-muted)" }}
-            title="Previous page"
+            title="Previous page (←)"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -423,7 +607,7 @@ function ReaderContent() {
                 handlePageChange(page);
               }}
               min={1}
-              max={totalPages || undefined}
+              max={totalPages}
               className="w-12 sm:w-16 px-2 py-1 text-sm text-center rounded border outline-none focus:border-[var(--accent)]"
               style={{
                 background: "var(--bg-primary)",
@@ -431,41 +615,39 @@ function ReaderContent() {
                 color: "var(--text-primary)",
               }}
             />
-            {totalPages && (
-              <span className="text-sm" style={{ color: "var(--text-muted)" }}>
-                / {totalPages}
-              </span>
-            )}
+            <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+              / {totalPages}
+            </span>
           </div>
 
           <button
             onClick={() => handlePageChange(currentPage + 1)}
-            disabled={totalPages !== null && currentPage >= totalPages}
+            disabled={currentPage >= totalPages}
             className="p-2 rounded transition-opacity hover:opacity-70 disabled:opacity-30 disabled:cursor-not-allowed"
             style={{ color: "var(--text-muted)" }}
-            title="Next page"
+            title="Next page (→)"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Reading Progress Indicator - Mobile */}
+        {/* Reading Progress Indicator */}
         <div
-          className="hidden xs:flex sm:flex items-center gap-1 text-xs"
+          className="hidden sm:flex items-center gap-1 text-xs"
           style={{ color: "var(--text-ghost)" }}
         >
           <Bookmark className="w-3 h-3" />
-          <span className="hidden sm:inline">Auto-saved</span>
+          <span>Auto-saved</span>
         </div>
 
         {/* Zoom Controls */}
         <div className="flex items-center gap-1">
           <button
             onClick={handleZoomOut}
-            disabled={zoom <= 50}
+            disabled={scale <= 0.5}
             className="p-2 rounded transition-opacity hover:opacity-70 disabled:opacity-30 disabled:cursor-not-allowed hidden sm:block"
             style={{ color: "var(--text-muted)" }}
-            title="Zoom out"
+            title="Zoom out (-)"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
@@ -476,15 +658,15 @@ function ReaderContent() {
             style={{ color: "var(--text-muted)" }}
             title="Reset zoom"
           >
-            {zoom}%
+            {Math.round(scale * 100)}%
           </button>
 
           <button
             onClick={handleZoomIn}
-            disabled={zoom >= 200}
+            disabled={scale >= 3}
             className="p-2 rounded transition-opacity hover:opacity-70 disabled:opacity-30 disabled:cursor-not-allowed hidden sm:block"
             style={{ color: "var(--text-muted)" }}
-            title="Zoom in"
+            title="Zoom in (+)"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
@@ -498,7 +680,7 @@ function ReaderContent() {
             onClick={isFullscreen ? handleExitFullscreen : handleFullscreen}
             className="p-2 rounded transition-opacity hover:opacity-70"
             style={{ color: "var(--text-muted)" }}
-            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            title={isFullscreen ? "Exit fullscreen (Esc)" : "Fullscreen"}
           >
             {isFullscreen ? (
               <Minimize className="w-4 h-4" />
