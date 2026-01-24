@@ -5,6 +5,7 @@ import { BookOpen, Plus, LogOut, LogIn, Pencil, Trash2 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BookCard } from "@/components/BookCard";
 import { SearchBar } from "@/components/SearchBar";
+import { Footer } from "@/components/Footer";
 import { BookForm } from "@/components/admin/BookForm";
 import { LoginForm } from "@/components/admin/LoginForm";
 import { DeleteConfirmModal } from "@/components/admin/DeleteConfirmModal";
@@ -344,6 +345,10 @@ export default function HomePage() {
         </div>
       </main>
 
+      {/* Footer */}
+      <Footer />
+
+      {/* Modals */}
       {/* Login Modal */}
       {showLoginForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

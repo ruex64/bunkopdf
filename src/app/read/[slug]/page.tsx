@@ -17,6 +17,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Footer } from "@/components/Footer";
 import { getBookBySlug, type Book } from "@/lib/firebase";
 import { getReadingProgress, setReadingProgress } from "@/lib/readingProgress";
 

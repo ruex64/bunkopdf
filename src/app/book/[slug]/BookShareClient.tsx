@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BookOpen, ArrowRight, Share2, Check, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Footer } from "@/components/Footer";
 import type { BookCategory } from "@/lib/firebase";
 
 interface SerializedBook {
@@ -194,6 +195,9 @@ export function BookShareClient({ book }: BookShareClientProps) {
           </Link>
         </div>
       </main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
