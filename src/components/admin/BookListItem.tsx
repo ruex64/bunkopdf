@@ -42,9 +42,6 @@ export function BookListItem({ book, onEdit, onDelete }: BookListItemProps) {
         >
           {book.title}
         </h3>
-        <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-          {book.author}
-        </p>
         {book.category && (
           <span
             className="inline-block text-xs px-1.5 py-0.5 rounded mt-1.5"
