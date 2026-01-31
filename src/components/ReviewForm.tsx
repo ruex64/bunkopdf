@@ -92,8 +92,17 @@ export default function ReviewForm({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+    <div
+      className="rounded-lg shadow-md p-6 border"
+      style={{
+        background: "var(--bg-secondary)",
+        borderColor: "var(--border-primary)",
+      }}
+    >
+      <h3
+        className="text-2xl font-bold mb-4"
+        style={{ color: "var(--text-primary)" }}
+      >
         Write a Review
       </h3>
 
@@ -102,9 +111,10 @@ export default function ReviewForm({
         <div>
           <label
             htmlFor="name"
-            className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium mb-2"
+            style={{ color: "var(--text-secondary)" }}
           >
-            Name <span className="text-red-500">*</span>
+            Name <span style={{ color: "var(--accent)" }}>*</span>
           </label>
           <input
             type="text"
@@ -112,7 +122,12 @@ export default function ReviewForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter your name"
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+            style={{
+              background: "var(--bg-tertiary)",
+              borderColor: "var(--border-primary)",
+              color: "var(--text-primary)",
+            }}
             maxLength={100}
             disabled={isSubmitting}
           />
@@ -120,8 +135,11 @@ export default function ReviewForm({
 
         {/* Star Rating */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-            Rating <span className="text-red-500">*</span>
+          <label
+            className="block text-sm font-medium mb-2"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Rating <span style={{ color: "var(--accent)" }}>*</span>
           </label>
           <StarRating rating={rating} onRatingChange={setRating} />
         </div>
@@ -130,9 +148,10 @@ export default function ReviewForm({
         <div>
           <label
             htmlFor="comment"
-            className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium mb-2"
+            style={{ color: "var(--text-secondary)" }}
           >
-            Comment <span className="text-red-500">*</span>
+            Comment <span style={{ color: "var(--accent)" }}>*</span>
           </label>
           <textarea
             id="comment"
@@ -140,11 +159,16 @@ export default function ReviewForm({
             onChange={(e) => setComment(e.target.value)}
             placeholder="Share your thoughts about this book..."
             rows={5}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-vertical"
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 resize-vertical"
+            style={{
+              background: "var(--bg-tertiary)",
+              borderColor: "var(--border-primary)",
+              color: "var(--text-primary)",
+            }}
             maxLength={1000}
             disabled={isSubmitting}
           />
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
             {comment.length}/1000 characters
           </div>
         </div>
@@ -168,14 +192,28 @@ export default function ReviewForm({
 
         {/* Error Message */}
         {error && (
-          <div className="p-3 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg text-sm">
+          <div
+            className="p-3 border rounded-lg text-sm"
+            style={{
+              background: "var(--bg-tertiary)",
+              borderColor: "var(--accent)",
+              color: "var(--accent)",
+            }}
+          >
             {error}
           </div>
         )}
 
         {/* Success Message */}
         {success && (
-          <div className="p-3 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-400 rounded-lg text-sm">
+          <div
+            className="p-3 border rounded-lg text-sm"
+            style={{
+              background: "var(--bg-tertiary)",
+              borderColor: "var(--accent)",
+              color: "var(--text-primary)",
+            }}
+          >
             Review submitted successfully!
           </div>
         )}
@@ -184,7 +222,11 @@ export default function ReviewForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 disabled:cursor-not-allowed"
+          className="w-full font-semibold py-3 px-6 rounded-lg transition-opacity duration-200 disabled:cursor-not-allowed hover:opacity-90"
+          style={{
+            background: isSubmitting ? "var(--text-ghost)" : "var(--accent)",
+            color: "var(--bg-primary)",
+          }}
         >
           {isSubmitting ? "Submitting..." : "Submit Review"}
         </button>

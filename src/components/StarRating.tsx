@@ -55,11 +55,11 @@ export default function StarRating({
         >
           <Star
             size={size}
-            className={`transition-all ${
-              value <= displayRating
-                ? "fill-yellow-400 text-yellow-400"
-                : "fill-none text-gray-300 dark:text-gray-600"
-            }`}
+            className="transition-all"
+            style={{
+              fill: value <= displayRating ? "var(--accent)" : "none",
+              color: value <= displayRating ? "var(--accent)" : "var(--text-ghost)",
+            }}
           />
         </button>
       ))}

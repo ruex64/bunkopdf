@@ -64,12 +64,18 @@ export default function ReviewList({ bookId, refreshTrigger }: ReviewListProps) 
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <div
+        className="rounded-lg shadow-md p-6 border"
+        style={{
+          background: "var(--bg-secondary)",
+          borderColor: "var(--border-primary)",
+        }}
+      >
         <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+          <div className="h-6 rounded w-1/3" style={{ background: "var(--bg-tertiary)" }}></div>
           <div className="space-y-3">
-            <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-20 rounded" style={{ background: "var(--bg-tertiary)" }}></div>
+            <div className="h-20 rounded" style={{ background: "var(--bg-tertiary)" }}></div>
           </div>
         </div>
       </div>
@@ -78,8 +84,14 @@ export default function ReviewList({ bookId, refreshTrigger }: ReviewListProps) 
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <p className="text-red-600 dark:text-red-400">{error}</p>
+      <div
+        className="rounded-lg shadow-md p-6 border"
+        style={{
+          background: "var(--bg-secondary)",
+          borderColor: "var(--border-primary)",
+        }}
+      >
+        <p style={{ color: "var(--accent)" }}>{error}</p>
       </div>
     );
   }
@@ -87,15 +99,21 @@ export default function ReviewList({ bookId, refreshTrigger }: ReviewListProps) 
   const averageRating = calculateAverageRating();
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+    <div
+      className="rounded-lg shadow-md p-6 border"
+      style={{
+        background: "var(--bg-secondary)",
+        borderColor: "var(--border-primary)",
+      }}
+    >
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h3 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
           Reviews ({reviews.length})
         </h3>
         {reviews.length > 0 && (
           <div className="flex items-center gap-2">
             <StarRating rating={Math.round(averageRating)} readonly size={20} />
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+            <span className="text-sm" style={{ color: "var(--text-muted)" }}>
               {averageRating.toFixed(1)} average
             </span>
           </div>
@@ -103,7 +121,7 @@ export default function ReviewList({ bookId, refreshTrigger }: ReviewListProps) 
       </div>
 
       {reviews.length === 0 ? (
-        <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+        <p className="text-center py-8" style={{ color: "var(--text-muted)" }}>
           No reviews yet. Be the first to review this book!
         </p>
       ) : (
@@ -111,25 +129,29 @@ export default function ReviewList({ bookId, refreshTrigger }: ReviewListProps) 
           {reviews.map((review) => (
             <div
               key={review.id}
-              className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-b-0"
+              className="border-b pb-4 last:border-b-0"
+              style={{ borderColor: "var(--border-primary)" }}
             >
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <div
+                  className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ background: "var(--bg-tertiary)" }}
+                >
+                  <User className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-semibold text-gray-900 dark:text-white">
+                    <h4 className="font-semibold" style={{ color: "var(--text-primary)" }}>
                       {review.name}
                     </h4>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                       {formatDate(review.createdAt)}
                     </span>
                   </div>
                   <div className="mb-2">
                     <StarRating rating={review.rating} readonly size={16} />
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                  <p className="whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
                     {review.comment}
                   </p>
                 </div>
