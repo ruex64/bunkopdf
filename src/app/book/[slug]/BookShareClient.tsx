@@ -6,6 +6,8 @@ import Link from "next/link";
 import { BookOpen, ArrowRight, Share2, Check, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
+import ReviewForm from "@/components/ReviewForm";
+import ReviewList from "@/components/ReviewList";
 import type { BookCategory } from "@/lib/firebase";
 
 interface SerializedBook {
@@ -27,6 +29,7 @@ interface BookShareClientProps {
 export function BookShareClient({ book }: BookShareClientProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [refreshReviews, setRefreshReviews] = useState(0);
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -57,6 +60,10 @@ export function BookShareClient({ book }: BookShareClientProps) {
     router.push(`/read/${book.slug}`);
   };
 
+  const handleReviewSubmitted = () => {
+    setRefreshReviews((prev) => prev + 1);
+  };
+
   return (
     <div
       className="min-h-screen flex flex-col"
@@ -84,15 +91,16 @@ export function BookShareClient({ book }: BookShareClientProps) {
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-4xl space-y-8">
           {/* Book Card */}
-          <div
-            className="rounded-lg overflow-hidden shadow-lg"
-            style={{
-              background: "var(--bg-secondary)",
-              borderColor: "var(--border-primary)",
-            }}
-          >
+          <div className="max-w-md mx-auto">
+            <div
+              className="rounded-lg overflow-hidden shadow-lg"
+              style={{
+                background: "var(--bg-secondary)",
+                borderColor: "var(--border-primary)",
+              }}
+            >
             {/* Cover Image */}
             {book.coverUrl ? (
               <div className="relative aspect-[3/4] w-full">
@@ -187,12 +195,19 @@ export function BookShareClient({ book }: BookShareClientProps) {
           {/* Browse More */}
           <Link
             href="/"
-            className="flex items-center justify-center gap-2 mt-6 text-sm transition-opacity hover:opacity-70"
+            className="flex items-center justify-center gap-2 text-sm transition-opacity hover:opacity-70"
             style={{ color: "var(--text-muted)" }}
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Browse more books</span>
           </Link>
+          </div>
+
+          {/* Reviews Section */}
+          <div className="space-y-6">
+            <ReviewList bookId={book.id} refreshTrigger={refreshReviews} />
+            <ReviewForm bookId={book.id} onReviewSubmitted={handleReviewSubmitted} />
+          </div>
         </div>
       </main>
 

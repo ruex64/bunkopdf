@@ -284,4 +284,68 @@ export async function deleteBook(id: string): Promise<void> {
   }
 }
 
+// Review type definition
+export interface Review {
+  id: string;
+  bookId: string;
+  name: string;
+  comment: string;
+  rating: number;
+  createdAt: Date;
+}
+
+// Reviews collection reference
+const reviewsCollection = collection(db, "reviews");
+
+// Add a new review
+export async function addReview(
+  review: Omit<Review, "id" | "createdAt">
+): Promise<string> {
+  console.log("[Firebase] Adding new review for book:", review.bookId);
+  
+  try {
+    const docRef = await addDoc(reviewsCollection, {
+      ...review,
+      createdAt: Timestamp.now(),
+    });
+    
+    console.log(`[Firebase] Review added successfully with ID: ${docRef.id}`);
+    return docRef.id;
+  } catch (error) {
+    logFirebaseError("addReview", error);
+    throw error;
+  }
+}
+
+// Get reviews for a specific book
+export async function getReviewsByBookId(bookId: string): Promise<Review[]> {
+  console.log(`[Firebase] Fetching reviews for book: ${bookId}`);
+  
+  try {
+    const q = query(
+      reviewsCollection,
+      where("bookId", "==", bookId),
+      orderBy("createdAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    
+    console.log(`[Firebase] Successfully fetched ${snapshot.docs.length} reviews`);
+    
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        bookId: data.bookId,
+        name: data.name,
+        comment: data.comment,
+        rating: data.rating,
+        createdAt: data.createdAt?.toDate() || new Date(),
+      };
+    });
+  } catch (error) {
+    logFirebaseError("getReviewsByBookId", error);
+    throw error;
+  }
+}
+
 export { db };

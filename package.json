@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "^1.4.1",
     "firebase": "^10.7.1",
     "lucide-react": "^0.303.0",
     "next": "14.0.4",

@@ -20,7 +20,7 @@ A comprehensive guide to the visual design language and UI patterns used in Bunk
 
 ## Design Philosophy
 
-BunkoPDF follows a **quiet documentation aesthetic** inspired by Japanese minimalism. The interface is designed to feel like writing in a physical notebook—calm, focused, and free from distraction.
+BunkoPDF follows a **quiet documentation aesthetic** inspired by Japanese minimalism. The interface is designed to feel like writing in a physical notebook: calm, focused, and free from distraction.
 
 ### Core Principles
 
@@ -358,11 +358,11 @@ import { Save, Download, Share2, Moon, Sun } from "lucide-react";
 
 ### Icon Guidelines
 
-- ✅ Use Lucide icons only
-- ✅ Keep icons subtle (muted color by default)
-- ❌ Never use emoji characters as icons
-- ❌ No animated icons
-- ❌ No colorful/multi-color icons
+- Use Lucide icons only
+- Keep icons subtle (muted color by default)
+- Never use emoji characters as icons
+- Do not use animated icons
+- Do not use colorful or multi-color icons
 
 ---
 
@@ -459,7 +459,7 @@ outline-none focus:ring-2 focus:ring-[var(--accent)]
 
 ### Toast Messages
 
-Currently using inline status text (e.g., "Saving...", "Saved ✓") rather than toast notifications to maintain visual calm.
+Currently using inline status text (for example, "Saving..." and "Saved") rather than toast notifications to maintain visual calm.
 
 ---
 
@@ -467,9 +467,9 @@ Currently using inline status text (e.g., "Saving...", "Saved ✓") rather than 
 
 ### What NOT to Do
 
-| ❌ Don't | ✅ Do Instead |
+| Do not | Do instead |
 |----------|---------------|
-| Use emoji 🎉 | Use Lucide icons |
+| Use emoji characters | Use Lucide icons |
 | Pure black/white | Use palette colors |
 | Bright colors | Use muted palette |
 | Heavy shadows | Light or no shadows |
